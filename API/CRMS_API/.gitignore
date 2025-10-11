@@ -1,0 +1,53 @@
+# Build results
+bin/
+obj/
+out/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Visual Studio
+.vs/
+.vscode/
+*.code-workspace
+
+# Rider
+.idea/
+
+# Logs
+*.log
+Logs/
+
+# Database files
+*.db
+*.sqlite
+*.mdf
+*.ldf
+
+# NuGet packages
+packages/
+*.nupkg
+project.lock.json
+project.assets.json
+*.nuspec
+*.snupkg
+
+# Configuration secrets
+appsettings.Development.json
+
+
+
+# Env files
+.env
+
+# Others
+*.ncrunch*
+_ReSharper.*/
+*.tsbuildinfo

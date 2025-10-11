@@ -1,0 +1,95 @@
+﻿@model CRMS_UI.ViewModels.Cars.CarCreateUpdateViewModel
+
+@{
+    // Why: Use one view for both Create and Edit by checking Id.
+    var isEdit = Model.Id != 0;
+    Layout = "_Layout";
+    ViewData["Title"] = isEdit ? "Edit Vehicle" : "Add New Vehicle";
+}
+
+<div class="py-8 max-w-2xl mx-auto">
+    <h1 class="text-3xl font-extrabold text-gray-900 mb-6">@ViewData["Title"]</h1>
+
+    <!-- Form Container -->
+    <div class="bg-white shadow-xl rounded-xl p-8">
+        <form asp-controller="Cars" asp-action="@(isEdit ? "Edit" : "Create")" method="post">
+            @Html.AntiForgeryToken()
+
+            @if (isEdit)
+            {
+                <!-- Hidden field for Id when editing -->
+                <input type="hidden" asp-for="Id" />
+            }
+
+            <!-- Validation Summary -->
+            <div asp-validation-summary="ModelOnly"
+                 class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+            </div>
+
+            <!-- Plate Input -->
+            <div class="mb-4">
+                <label asp-for="Plate" class="block text-sm font-medium text-gray-700">License Plate</label>
+                <input asp-for="Plate"
+                       class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2
+                              focus:ring-indigo-500 focus:border-indigo-500 @(isEdit ? "bg-gray-100" : "")"
+                       readonly="@(isEdit)" />
+                <span asp-validation-for="Plate" class="text-red-600 text-sm mt-1 block"></span>
+
+                @if (isEdit)
+                {
+                    <p class="mt-1 text-xs text-gray-500">
+                        Note: License Plate cannot be changed during edit.
+                    </p>
+                }
+            </div>
+
+            <!-- Make Input -->
+            <div class="mb-4">
+                <label asp-for="Make" class="block text-sm font-medium text-gray-700">Manufacturer (Make)</label>
+                <input asp-for="Make"
+                       class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2
+                              focus:ring-indigo-500 focus:border-indigo-500" />
+                <span asp-validation-for="Make" class="text-red-600 text-sm mt-1 block"></span>
+            </div>
+
+            <!-- Model Input -->
+            <div class="mb-4">
+                <label asp-for="Model" class="block text-sm font-medium text-gray-700">Model Name</label>
+                <input asp-for="Model"
+                       class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2
+                              focus:ring-indigo-500 focus:border-indigo-500" />
+                <span asp-validation-for="Model" class="text-red-600 text-sm mt-1 block"></span>
+            </div>
+
+            <!-- Year Input -->
+            <div class="mb-6">
+                <label asp-for="Year" class="block text-sm font-medium text-gray-700">Year</label>
+                <input asp-for="Year"
+                       type="number"
+                       class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2
+                              focus:ring-indigo-500 focus:border-indigo-500" />
+                <span asp-validation-for="Year" class="text-red-600 text-sm mt-1 block"></span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-4">
+                <a asp-controller="Cars"
+                   asp-action="Index"
+                   class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md
+                          hover:bg-gray-300 transition duration-150 shadow-sm">
+                    Cancel
+                </a>
+
+                <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md
+                               hover:bg-indigo-700 transition duration-150 shadow-lg">
+                    @(isEdit ? "Save Changes" : "Create Vehicle")
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

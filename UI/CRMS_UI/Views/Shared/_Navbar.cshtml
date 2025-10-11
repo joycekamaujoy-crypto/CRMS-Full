@@ -1,0 +1,43 @@
+﻿@{
+    var userRole = Context.Session.GetString("UserRole") ?? string.Empty;
+    var userName = Context.Session.GetString("UserName") ?? "Guest";
+    var isAuthenticated = !string.IsNullOrEmpty(Context.Session.GetString("JWToken"));
+}
+
+<nav class="fixed top-0 z-50 w-full bg-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex-shrink-0 flex items-center">
+                <a asp-controller="Dashboard" asp-action="@(userRole == "Owner" ? "AdminDashboard" : "UserDashboard")" class="text-xl font-bold text-indigo-600 tracking-wider">
+                    <i class="fa-solid fa-car-side mr-2"></i>CarRental
+                </a>
+            </div>
+
+            @if (isAuthenticated)
+            {
+                <div class="flex items-center space-x-4">
+                    @if (userRole == "Owner")
+                    {
+                        <a asp-controller="Dashboard" asp-action="AdminDashboard" class="text-gray-900 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition duration-150">Dashboard</a>
+                        <a asp-controller="Cars" asp-action="Index" class="text-gray-900 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition duration-150">Fleet</a>
+                        <a asp-controller="Rentals" asp-action="Index" class="text-gray-900 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition duration-150">Bookings</a>
+                        <a asp-controller="Tracking" asp-action="Index" class="text-gray-900 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition duration-150">Live Map</a>
+                    }
+                    else if (userRole == "Renter")
+                    {
+                        <a asp-controller="Dashboard" asp-action="UserDashboard" class="text-gray-900 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition duration-150">Dashboard</a>
+                        <a asp-controller="Cars" asp-action="Index" class="text-gray-900 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition duration-150">Browse Cars</a>
+                        <a asp-controller="Rentals" asp-action="History" class="text-gray-900 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition duration-150">My Rentals</a>
+                    }
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm font-medium text-gray-700 hidden sm:inline">Hello, @userName (@userRole)</span>
+                    <a asp-controller="Auth" asp-action="Logout" class="flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition duration-150 shadow-md">
+                        <i class="fa-solid fa-right-from-bracket mr-1"></i>Logout
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</nav>

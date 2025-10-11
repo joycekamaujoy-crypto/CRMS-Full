@@ -1,0 +1,126 @@
+﻿@model CRMS_UI.ViewModels.Dashboard.AdminDashboardViewModel
+
+@{
+    // Why: Ensure the correct layout and title are used.
+    Layout = "_Layout";
+    ViewData["Title"] = "Admin Dashboard";
+
+    // Retrieve user details for personalized greeting
+    var userName = Context.Session.GetString("UserName") ?? "Admin";
+}
+
+<div class="py-8">
+    <h1 class="text-3xl font-extrabold text-gray-900">Welcome back, @Model.UserName (Owner)</h1>
+    <p class="mt-2 text-lg text-gray-600">Overview of the rental system and fleet management controls.</p>
+
+    <!-- KPI Section: Management Metrics -->
+    <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+
+        <!-- KPI Card 1: Active Rentals -->
+        <div class="bg-white overflow-hidden shadow-lg rounded-xl border border-indigo-200">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-indigo-500 rounded-full p-3 text-white">
+                        <i class="fa-solid fa-key text-xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Active Rentals</dt>
+                            <dd>
+                                <div class="text-3xl font-extrabold text-gray-900">@Model.ActiveRentals</div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3 text-sm">
+                <a asp-controller="Rentals" asp-action="Index" class="font-medium text-indigo-600 hover:text-indigo-500">View All Bookings <i class="fa-solid fa-arrow-right-long ml-1"></i></a>
+            </div>
+        </div>
+
+        <!-- KPI Card 2: Fleet Size -->
+        <div class="bg-white overflow-hidden shadow-lg rounded-xl border border-green-200">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-green-500 rounded-full p-3 text-white">
+                        <i class="fa-solid fa-car text-xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Vehicles</dt>
+                            <dd>
+                                <div class="text-3xl font-extrabold text-gray-900">@Model.TotalVehicles</div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3 text-sm">
+                <a asp-controller="Cars" asp-action="Index" class="font-medium text-green-600 hover:text-green-500">Manage Fleet <i class="fa-solid fa-arrow-right-long ml-1"></i></a>
+            </div>
+        </div>
+
+        <!-- KPI Card 3: Pending Approvals -->
+        <div class="bg-white overflow-hidden shadow-lg rounded-xl border border-yellow-200">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-yellow-500 rounded-full p-3 text-white">
+                        <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Pending Approvals</dt>
+                            <dd>
+                                <div class="text-3xl font-extrabold text-gray-900">@Model.PendingApprovals</div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3 text-sm">
+                <a asp-controller="Rentals" asp-action="Index" class="font-medium text-yellow-600 hover:text-yellow-500">Review Requests <i class="fa-solid fa-arrow-right-long ml-1"></i></a>
+            </div>
+        </div>
+
+        <!-- KPI Card 4: Live Tracking -->
+        <div class="bg-white overflow-hidden shadow-lg rounded-xl border border-blue-200">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-blue-500 rounded-full p-3 text-white">
+                        <i class="fa-solid fa-location-dot text-xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Tracking Enabled</dt>
+                            <dd>
+                                <div class="text-3xl font-extrabold text-gray-900">@Model.TrackingEnabledPercent %</div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3 text-sm">
+                <a asp-controller="Tracking" asp-action="Index" class="font-medium text-blue-600 hover:text-blue-500">View Live Map <i class="fa-solid fa-arrow-right-long ml-1"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="mt-10 bg-white shadow-lg rounded-xl p-6">
+        <h2 class="text-xl font-bold text-gray-900 border-b pb-3 mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <a asp-controller="Cars" asp-action="Create" class="flex items-center justify-center p-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 shadow-sm">
+                <i class="fa-solid fa-plus-circle mr-2 text-lg text-green-500"></i>
+                <span class="font-medium">Add New Vehicle</span>
+            </a>
+            <a asp-controller="Rentals" asp-action="Index" class="flex items-center justify-center p-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 shadow-sm">
+                <i class="fa-solid fa-list-check mr-2 text-lg text-indigo-500"></i>
+                <span class="font-medium">Manage All Rentals</span>
+            </a>
+            <a asp-controller="Tracking" asp-action="Index" class="flex items-center justify-center p-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 shadow-sm">
+                <i class="fa-solid fa-gauge-high mr-2 text-lg text-blue-500"></i>
+                <span class="font-medium">Monitor Telemetry Feed</span>
+            </a>
+        </div>
+    </div>
+</div>

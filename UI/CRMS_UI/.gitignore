@@ -1,0 +1,72 @@
+# Visual Studio working folder
+.vs/
+
+
+# Build Folders (Visual Studio / .NET)
+bin/
+obj/
+out/
+publish/
+TestResults/
+
+# Rider / VS Code
+.idea/
+.vscode/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+#Logs
+.log
+Logs/
+
+# Build Artifacts
+*.dll
+*.exe
+*.app
+*.log
+
+# ASP.NET Core Configs (local-sensitive)
+appsettings.json
+
+# Entity Framework Migrations if sensitive
+# Migrations/
+
+# Node Modules (Tailwind, PostCSS, etc.)
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn.lock
+
+# Tailwind CSS Output
+wwwroot/css/output.css
+
+# Environment Variables
+.env
+.env.*
+
+# SQLite or other DB files (if used locally)
+*.db
+*.bak
+
+# JetBrains / Resharper
+_ReSharper*/
+*.DotSettings.user
+*.DotSettings
+
+# Misc
+*.tmp
+*.cache
+*.orig
+.DS_Store
+Thumbs.db
+
+# Tailwind compiled CSS
+wwwroot/css/output.css
+wwwroot/lib
+
+tailwindcss-windows-x64.exeappsettings.json
+appsettings.Development.json
