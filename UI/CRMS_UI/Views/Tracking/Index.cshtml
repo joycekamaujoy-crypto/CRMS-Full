@@ -62,7 +62,7 @@
 
             // --- 2. SIGNALR CONNECTION ---
 
-            const hubUrl = '/telemetryHub';
+            const hubUrl = '@ViewData["ApiSettings:SignalRHub"]';
             const token = '@Context.Session.GetString("JWToken")';
             const telemetryFeed = document.getElementById('telemetryFeed');
 

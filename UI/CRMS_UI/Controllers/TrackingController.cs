@@ -5,6 +5,13 @@ namespace CRMS_UI.Controllers
 {
     public class TrackingController : Controller
     {
+        private readonly IConfiguration _configuration;
+
+        // Inject IConfiguration
+        public TrackingController(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
         private IActionResult CheckAuth()
         {
             // Note: We allow both Renter and Owner to view tracking, 
@@ -23,6 +30,7 @@ namespace CRMS_UI.Controllers
             if (authCheck != null) return authCheck;
 
             ViewData["Title"] = "Real-time Vehicle Tracking";
+            ViewData["ApiSettings:SignalRHub"] = _configuration["ApiSettings:SignalRHub"];
             return View();
         }
     }
