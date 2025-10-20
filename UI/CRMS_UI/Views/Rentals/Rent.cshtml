@@ -8,20 +8,20 @@
     <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Book Vehicle</h1>
     <h2 class="text-xl text-indigo-600 mb-6 font-semibold">@ViewData["CarDetails"]</h2>
 
-    <!-- Form Container -->
+    
     <div class="bg-white shadow-xl rounded-xl p-8">
         <form asp-controller="Rentals" asp-action="Rent" method="post">
             <input type="hidden" asp-for="VehicleId" />
             @Html.AntiForgeryToken()
 
-            <!-- Display Validation Summary -->
+            
             <div asp-validation-summary="ModelOnly" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"></div>
 
-            <!-- Date Inputs -->
+            
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div>
                     <label asp-for="StartDate" class="block text-sm font-medium text-gray-700"></label>
-                    <!-- Why: Minimum date set to tomorrow to avoid past date errors -->
+                    
                     <input asp-for="StartDate" type="date" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" />
                     <span asp-validation-for="StartDate" class="text-red-600 text-sm mt-1 block"></span>
                 </div>
@@ -32,21 +32,21 @@
                 </div>
             </div>
 
-            <!-- Estimated Cost -->
+            
             <div class="bg-gray-50 border-l-4 border-indigo-500 p-4 mb-6 rounded-md">
                 <p class="text-sm text-gray-500">
                     Your request will be placed in **Pending** status. Payment is simulated by providing an M-Pesa reference.
                 </p>
             </div>
 
-            <!-- M-Pesa Reference Input (Payment Simulation) -->
+            
             <div class="mb-6">
                 <label asp-for="MpesaReference" class="block text-sm font-medium text-gray-700">M-Pesa Reference (Simulation)</label>
                 <input asp-for="MpesaReference" placeholder="e.g., QX8AA234J" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" />
                 <span asp-validation-for="MpesaReference" class="text-red-600 text-sm mt-1 block"></span>
             </div>
 
-            <!-- Action Buttons -->
+            
             <div class="flex justify-end space-x-4">
                 <a asp-controller="Cars" asp-action="Index" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition duration-150 shadow-sm">
                     Cancel

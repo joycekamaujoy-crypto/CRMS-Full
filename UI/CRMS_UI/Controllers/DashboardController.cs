@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using CRMS_UI.Services.Interfaces;
 using CRMS_UI.ViewModels.Dashboard;
-using System.Threading.Tasks; // Make sure this is included for Task
-
+using System.Threading.Tasks;
 namespace CRMS_UI.Controllers
 {
     public class DashboardController : Controller
@@ -23,7 +22,6 @@ namespace CRMS_UI.Controllers
             return null;
         }
 
-        // GET: /Dashboard/AdminDashboard
         public async Task<IActionResult> AdminDashboard()
         {
             var authCheck = CheckAuthentication();
@@ -43,17 +41,13 @@ namespace CRMS_UI.Controllers
 
             try
             {
-                // Start all API calls in parallel
-                // NOTE: Update these paths to your real API endpoints
                 var activeRentalsTask = _apiService.GetAsync<int>("booking/count/owner/active", HttpContext);
                 var totalVehiclesTask = _apiService.GetAsync<int>("vehicle/count/all", HttpContext);
                 var pendingApprovalsTask = _apiService.GetAsync<int>("booking/count/pending", HttpContext);
                 var trackingEnabledTask = _apiService.GetAsync<int>("telemetry/count/active", HttpContext);
 
-                // Wait for all of them to complete
                 await Task.WhenAll(activeRentalsTask, totalVehiclesTask, pendingApprovalsTask, trackingEnabledTask);
 
-                // Assign the results from the completed tasks
                 viewModel.ActiveRentals = activeRentalsTask.Result;
                 viewModel.TotalVehicles = totalVehiclesTask.Result;
                 viewModel.PendingApprovals = pendingApprovalsTask.Result;
@@ -67,7 +61,6 @@ namespace CRMS_UI.Controllers
             return View(viewModel);
         }
 
-        // GET: /Dashboard/UserDashboard
         public async Task<IActionResult> UserDashboard()
         {
             var authCheck = CheckAuthentication();
@@ -82,16 +75,12 @@ namespace CRMS_UI.Controllers
 
             try
             {
-                // Start all API calls in parallel
-                // NOTE: Update these paths to your real API endpoints
                 var availableCarsTask = _apiService.GetAsync<int>("vehicle/count/available", HttpContext);
                 var activeBookingsTask = _apiService.GetAsync<int>("booking/count/my-active", HttpContext);
                 var pendingApprovalsTask = _apiService.GetAsync<int>("booking/count/my-pending", HttpContext);
 
-                // Wait for all of them to complete
                 await Task.WhenAll(availableCarsTask, activeBookingsTask, pendingApprovalsTask);
 
-                // Assign the results from the completed tasks
                 viewModel.AvailableCarsCount = availableCarsTask.Result;
                 viewModel.ActiveBookingsCount = activeBookingsTask.Result;
                 viewModel.PendingApprovalsCount = pendingApprovalsTask.Result;

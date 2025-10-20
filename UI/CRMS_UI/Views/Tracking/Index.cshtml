@@ -7,15 +7,10 @@
 <div class="py-8">
     <h1 class="text-3xl font-extrabold text-gray-900 mb-6">@ViewData["Title"]</h1>
 
-    <!-- Map Container -->
-    <!-- Why: We include the Leaflet CSS link directly here, as it's specific to this view. -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <!-- Why: Increased height (70vh) for a better tracking experience. z-0 is important for Tailwind/Leaflet compatibility. -->
     <div id="map" class="w-full h-[70vh] rounded-xl shadow-2xl mb-6 border-2 border-gray-300 z-0">
-        <!-- Map will render here -->
     </div>
 
-    <!-- Live Data Console (For debugging/demo) -->
     <div class="bg-white shadow-xl rounded-xl p-6">
         <h2 class="text-xl font-semibold mb-3">Live Telemetry Data</h2>
         <ul id="telemetryFeed" class="space-y-1 text-sm text-gray-600 font-mono overflow-y-scroll h-40 border p-2 rounded bg-gray-50">
@@ -25,48 +20,35 @@
 </div>
 
 @section Scripts {
-    <!-- Load SignalR and Leaflet client libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-
-            // --- 1. MAP INITIALIZATION ---
-
             const nairobiCbd = [-1.286389, 36.817223];
-            // Why: Initialize the map centered on Nairobi CBD (start of the simulation route)
             const map = L.map('map', {
                 center: nairobiCbd,
                 zoom: 13,
                 scrollWheelZoom: true
             });
 
-            // Why: Add the base layer tiles from OpenStreetMap (OSM)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
 
-            // Why: Dictionary to hold L.Marker objects, keyed by vehicle ID, for quick updates
             const carMarkers = {};
-
-            // Why: Define a custom Leaflet icon for better visualization of cars using Font Awesome (from _Layout.cshtml)
             const carIcon = L.divIcon({
                 className: 'custom-car-icon',
                 html: '<i class="fa-solid fa-car-side text-2xl text-indigo-700 shadow-md p-1 bg-white rounded-full border border-indigo-400"></i>',
                 iconSize: [32, 32],
-                iconAnchor: [16, 16] // Center the icon
+                iconAnchor: [16, 16]
             });
 
-
-            // --- 2. SIGNALR CONNECTION ---
-
-            const hubUrl = '@ViewData["ApiSettings:SignalRHub"]';
+            const hubUrl = '@ViewData["ApiBaseUrl"]/telemetryHub';
             const token = '@Context.Session.GetString("JWToken")';
             const telemetryFeed = document.getElementById('telemetryFeed');
 
-            // Why: Set up the SignalR connection using the JWT token for authentication
             const connection = new signalR.HubConnectionBuilder()
                 .withUrl(hubUrl, {
                     accessTokenFactory: () => token
@@ -74,33 +56,23 @@
                 .withAutomaticReconnect()
                 .build();
 
-            // Why: Handle incoming data broadcast from the server
             connection.on("ReceiveTelemetryUpdate", (data) => {
-                // Log data to the console for debugging
                 console.log("Received Telemetry:", data);
-
-                // Call the function to update the map marker
                 updateCarLocation(data);
 
-                // Update the simple live feed
                 const listItem = document.createElement('li');
                 listItem.textContent = `Car ${data.plate} | Lat: ${data.latitude.toFixed(4)} | Lng: ${data.longitude.toFixed(4)} | Speed: ${data.speed.toFixed(1)} km/h`;
-
-                // Add new item to the top of the list
                 telemetryFeed.prepend(listItem);
 
-                // Keep the list length manageable (e.g., max 10 items)
                 if (telemetryFeed.children.length > 10) {
                     telemetryFeed.removeChild(telemetryFeed.lastChild);
                 }
             });
 
-            // Why: Start the connection and handle connection errors
             connection.start()
                 .then(() => {
                     console.log("SignalR Connected.");
                     telemetryFeed.innerHTML = '<li>SignalR Connected successfully. Waiting for data...</li>';
-                    // Center map on Nairobi CBD after successful connection
                     map.setView(nairobiCbd, 12);
                 })
                 .catch(err => {
@@ -108,33 +80,23 @@
                     telemetryFeed.innerHTML = `<li class="text-red-500">Connection Error: ${err.toString()}</li>`;
                 });
 
-            // --- 3. MARKER MANAGEMENT FUNCTION ---
             function updateCarLocation(data) {
                 const latLng = [data.latitude, data.longitude];
                 const markerKey = `car-${data.vehicleId}`;
-
-                // Why: Format the popup content neatly for the user
                 const popupContent = `
                     <div class="font-sans text-sm p-1">
                         <h4 class="font-bold text-indigo-700">${data.plate} (${data.makeModel || 'N/A'})</h4>
                         <p>Speed: <span class="font-semibold text-gray-800">${data.speed.toFixed(1)} km/h</span></p>
                         <p>Updated: <span class="font-semibold text-gray-800">${new Date(data.timeStamp).toLocaleTimeString()}</span></p>
-                    </div>
-                `;
+                    </div>`;
 
                 if (carMarkers[markerKey]) {
-                    // Update existing marker position
-                    // Why: setLatLng smoothly moves the marker (Leaflet handles the animation/interpolation)
                     carMarkers[markerKey].setLatLng(L.latLng(latLng));
-                    // Update popup content without opening it
                     carMarkers[markerKey].setPopupContent(popupContent);
-
                 } else {
-                    // Create a new marker
                     const newMarker = L.marker(latLng, { icon: carIcon })
                         .addTo(map)
                         .bindPopup(popupContent);
-
                     carMarkers[markerKey] = newMarker;
                 }
             }

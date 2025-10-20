@@ -14,7 +14,6 @@ namespace CRMS_UI.Controllers
             _apiService = apiService;
         }
 
-        // Why: Helper to centralize authentication checks.
         private IActionResult CheckAuth()
         {
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("JWToken")))
@@ -24,13 +23,11 @@ namespace CRMS_UI.Controllers
             return null;
         }
 
-        // GET: /Rentals/Index (Owner Only: View all bookings)
         public async Task<IActionResult> Index()
         {
             var authCheck = CheckAuth();
             if (authCheck != null) return authCheck;
 
-            // Why: Enforce Owner role access.
             if (HttpContext.Session.GetString("UserRole") != "Owner")
             {
                 return RedirectToAction("UserDashboard", "Dashboard");
@@ -39,7 +36,6 @@ namespace CRMS_UI.Controllers
             ViewData["Title"] = "All Rental Bookings";
             try
             {
-                // API call to fetch all rentals (Owner endpoint)
                 var rentals = await _apiService.GetAsync<List<RentalViewModel>>("booking/owner", HttpContext);
                 return View(rentals);
             }
@@ -50,13 +46,11 @@ namespace CRMS_UI.Controllers
             }
         }
 
-        // GET: /Rentals/History (Renter Only: View my bookings)
         public async Task<IActionResult> History()
         {
             var authCheck = CheckAuth();
             if (authCheck != null) return authCheck;
 
-            // Why: History is the dedicated view for Renter users.
             if (HttpContext.Session.GetString("UserRole") != "Renter")
             {
                 return RedirectToAction("AdminDashboard", "Dashboard");
@@ -65,7 +59,6 @@ namespace CRMS_UI.Controllers
             ViewData["Title"] = "My Rental History";
             try
             {
-                // API call to fetch rentals for the current user (Renter endpoint)
                 var rentals = await _apiService.GetAsync<List<RentalViewModel>>("booking/mine", HttpContext);
                 return View(rentals);
             }
@@ -76,7 +69,6 @@ namespace CRMS_UI.Controllers
             }
         }
 
-        // GET: /Rentals/Rent/{vehicleId} (Renter only)
         [HttpGet]
         public async Task<IActionResult> Rent(int id)
         {
@@ -85,7 +77,6 @@ namespace CRMS_UI.Controllers
 
             try
             {
-                // Fetch car details to display on the booking form
                 var car = await _apiService.GetAsync<CarViewModel>($"vehicle/{id}", HttpContext);
                 var model = new RentalCreateViewModel { VehicleId = id, StartDate = DateTime.Today.AddDays(1), EndDate = DateTime.Today.AddDays(3) };
 
@@ -100,7 +91,6 @@ namespace CRMS_UI.Controllers
             }
         }
 
-        // POST: /Rentals/Rent
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Rent(RentalCreateViewModel model)
@@ -110,13 +100,11 @@ namespace CRMS_UI.Controllers
 
             if (!ModelState.IsValid || model.StartDate >= model.EndDate || model.StartDate < DateTime.Today)
             {
-                // Add specific errors if dates are invalid
                 if (model.StartDate >= model.EndDate)
                     ModelState.AddModelError(string.Empty, "Start Date must be before End Date.");
                 if (model.StartDate < DateTime.Today)
                     ModelState.AddModelError(string.Empty, "Start Date cannot be in the past.");
 
-                // Re-fetch car details for the view to avoid null reference errors
                 var car = await _apiService.GetAsync<CarViewModel>($"vehicle/{model.VehicleId}", HttpContext);
                 ViewData["CarDetails"] = $"{car.Make} {car.Model} ({car.Plate})";
 
@@ -125,7 +113,6 @@ namespace CRMS_UI.Controllers
 
             try
             {
-                // Call the backend API to create the booking (Renter)
                 await _apiService.PostAsync<RentalViewModel, RentalCreateViewModel>("booking", model, HttpContext);
                 TempData["SuccessMessage"] = "Rental request sent successfully! Awaiting owner approval.";
                 return RedirectToAction("History");
@@ -137,7 +124,6 @@ namespace CRMS_UI.Controllers
             }
         }
 
-        // POST: /Rentals/UpdateStatus/{id} (Owner Only)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStatus(int id, [FromForm] BookingStatus newStatus)
@@ -155,8 +141,6 @@ namespace CRMS_UI.Controllers
             {
                 var updateModel = new RentalUpdateStatusViewModel { RentalId = id, NewStatus = newStatus };
 
-                // --- THE FIX IS HERE ---
-                // Change the expected return type from RentalViewModel to bool.
                 var success = await _apiService.PutAsync<bool, RentalUpdateStatusViewModel>($"api/booking/{id}/status", updateModel, HttpContext);
 
                 if (success)

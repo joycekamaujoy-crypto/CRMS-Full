@@ -16,7 +16,6 @@ namespace CRMS_UI.ViewModels.Rentals
         [Display(Name = "End Date")]
         public DateTime EndDate { get; set; }
 
-        // Why: Used for payment simulation (M-Pesa reference)
         [Required]
         [StringLength(15)]
         [Display(Name = "M-Pesa Reference")]

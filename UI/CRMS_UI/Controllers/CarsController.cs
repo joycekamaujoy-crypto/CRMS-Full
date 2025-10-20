@@ -13,7 +13,6 @@ namespace CRMS_UI.Controllers
             _apiService = apiService;
         }
 
-        // Why: Helper to centralize authentication and authorization checks.
         private IActionResult CheckAuth(string requiredRole = null)
         {
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("JWToken")))
@@ -22,14 +21,11 @@ namespace CRMS_UI.Controllers
             }
             if (requiredRole != null && HttpContext.Session.GetString("UserRole") != requiredRole)
             {
-                // Redirect user role to a safe view if they try to access an unauthorized route
                 return RedirectToAction("UserDashboard", "Dashboard");
             }
             return null;
         }
 
-        // GET: /Cars
-        // Available to both Renter (for browsing) and Owner (for managing)
         public async Task<IActionResult> Index()
         {
             var authCheck = CheckAuth();
@@ -43,14 +39,11 @@ namespace CRMS_UI.Controllers
                 List<CarViewModel> cars;
                 if (isOwner)
                 {
-                    // --- REFACTORED LOGIC ---
-                    // Owners should only see their own vehicles from a secure endpoint.
                     ViewData["Title"] = "My Fleet Management";
                     cars = await _apiService.GetAsync<List<CarViewModel>>("vehicle/owner", HttpContext);
                 }
                 else
                 {
-                    // Renters see all available vehicles to browse for rental.
                     ViewData["Title"] = "Available Fleet for Rent";
                     cars = await _apiService.GetAsync<List<CarViewModel>>("vehicle/all", HttpContext);
                 }
@@ -63,7 +56,6 @@ namespace CRMS_UI.Controllers
             }
         }
 
-        // GET: /Cars/Create (Owner Only)
         [HttpGet]
         public IActionResult Create()
         {
@@ -74,7 +66,6 @@ namespace CRMS_UI.Controllers
             return View(new CarCreateUpdateViewModel());
         }
 
-        // POST: /Cars/Create (Owner Only)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CarCreateUpdateViewModel model)
@@ -100,7 +91,6 @@ namespace CRMS_UI.Controllers
             }
         }
 
-        // GET: /Cars/Edit/{id} (Owner Only)
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -120,7 +110,6 @@ namespace CRMS_UI.Controllers
             }
         }
 
-        // POST: /Cars/Edit/{id} (Owner Only)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, CarCreateUpdateViewModel model)
@@ -135,8 +124,6 @@ namespace CRMS_UI.Controllers
 
             try
             {
-                // Note: The backend will usually ignore the Id in the model body for security, 
-                // but we pass it for client-side model binding consistency.
                 await _apiService.PutAsync<CarViewModel, CarCreateUpdateViewModel>($"vehicle/{id}", model, HttpContext);
                 TempData["SuccessMessage"] = "Vehicle updated successfully!";
                 return RedirectToAction("Index");
@@ -148,7 +135,6 @@ namespace CRMS_UI.Controllers
             }
         }
 
-        // POST: /Cars/Delete/{id} (Owner Only)
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
