@@ -27,7 +27,6 @@ namespace CRMS_API.Services.Implementations
             return !isOverlapping;
         }
 
-        //add a way for owners to change renting status to completed!!
 
         public async Task<(BookingResponseDto? Booking, string Error)> RequestBookingAsync(BookingRequestDto request, int renterId)
         {
@@ -39,11 +38,11 @@ namespace CRMS_API.Services.Implementations
             var vehicle = await _context.Vehicles
                 .Include(v => v.Owner)
                 .FirstOrDefaultAsync(v => v.Id == request.VehicleId);
-            if(vehicle == null)
+            if (vehicle == null)
                 return (null, "Vehicle not found");
             if (vehicle.OwnerId == renterId)
                 return (null, "You cannot rent your own vehicle");
-            if(!await IsVehicleAvailableAsync(request.VehicleId, request.StartDate, request.EndDate))
+            if (!await IsVehicleAvailableAsync(request.VehicleId, request.StartDate, request.EndDate))
             {
                 return (null, "Vehicle is not available for the requested dates");
             }
@@ -55,7 +54,6 @@ namespace CRMS_API.Services.Implementations
                 StartDate = request.StartDate,
                 EndDate = request.EndDate,
                 Status = bookingStatus.Pending
-               // TotalPrice = request.TotalPrice
             };
 
             _context.Bookings.Add(newBooking);
@@ -72,7 +70,6 @@ namespace CRMS_API.Services.Implementations
                 RenterName = renter!.Name,
                 StartDate = newBooking.StartDate,
                 EndDate = newBooking.EndDate,
-                //TotalPrice = newBooking.TotalPrice,
                 Status = newBooking.Status
             }, string.Empty);
         }
@@ -82,16 +79,13 @@ namespace CRMS_API.Services.Implementations
                 .Include(b => b.Vehicle)
                 .FirstOrDefaultAsync(b => b.Id == bookingId);
 
-            // Security check: Booking must exist AND belong to the owner making the request.
             if (booking == null || booking.Vehicle.OwnerId != ownerId)
             {
-                return false; // Not found or unauthorized
+                return false;
             }
 
-            // Business Logic: Add any rules here, e.g., can't cancel an active booking.
             if (booking.Status == bookingStatus.Active && newStatus == bookingStatus.Cancelled)
             {
-                // Example rule: Prevent cancelling a rental that's already in progress.
                 return false;
             }
 
@@ -107,10 +101,7 @@ namespace CRMS_API.Services.Implementations
                     .Include(b => b.Renter)
                     .Where(b => b.RenterId == renterId)
                     .OrderByDescending(b => b.StartDate)
-                    .ToListAsync(); // This runs the SQL query
-
-            // 2. Map the results in memory using standard LINQ to Objects.
-            //    This is now safe because all the data is loaded.
+                    .ToListAsync();
             return bookingsFromDb.Select(b => MapBookingToResponseDto(b));
         }
         public async Task<IEnumerable<BookingResponseDto>> GetOwnerBookingsAsync(int ownerId)
@@ -120,14 +111,11 @@ namespace CRMS_API.Services.Implementations
                     .Include(b => b.Renter)
                     .Where(b => b.Vehicle.OwnerId == ownerId)
                     .OrderByDescending(b => b.StartDate)
-                    .ToListAsync(); // This runs the SQL query
-
-            // 2. Map the results in memory.
+                    .ToListAsync();
             return bookingsFromDb.Select(b => MapBookingToResponseDto(b));
         }
         public async Task<int> GetTotalPendingApprovalsCountAsync()
         {
-            // Counts all bookings in the system with the status "Pending"
             return await _context.Bookings
                 .CountAsync(b => b.Status == bookingStatus.Pending);
         }
@@ -136,29 +124,23 @@ namespace CRMS_API.Services.Implementations
         {
             var now = DateTime.UtcNow;
 
-            // Counts bookings that are approved, ongoing, AND belong to a vehicle owned by the specified ownerId
             return await _context.Bookings
                 .CountAsync(b => b.Vehicle.OwnerId == ownerId &&
-                                 b.Status == bookingStatus.Approved &&
-                                 b.StartDate <= now &&
-                                 b.EndDate >= now);
+                     b.Status == bookingStatus.Approved &&
+                     b.StartDate <= now &&
+                     b.EndDate >= now);
         }
 
         public async Task<int> GetMyActiveBookingsCountAsync(int renterId)
         {
-            var now = DateTime.UtcNow; // Get the current time once
-
-            // An active booking is one that has been approved and is currently ongoing.
+            var now = DateTime.UtcNow;
             return await _context.Bookings
                 .CountAsync(b => b.RenterId == renterId &&
-                                 b.Status == bookingStatus.Approved && // It must have been approved
-                                 b.StartDate <= now &&                  // The rental period has started
-                                 b.EndDate >= now);                     // The rental period has not ended
+                     b.Status == bookingStatus.Approved && b.StartDate <= now && b.EndDate >= now);
         }
 
         public async Task<int> GetMyPendingBookingsCountAsync(int renterId)
         {
-            // Counts bookings for the specific renterId that are "Pending" approval
             return await _context.Bookings
                 .CountAsync(b => b.RenterId == renterId && b.Status == bookingStatus.Pending);
         }

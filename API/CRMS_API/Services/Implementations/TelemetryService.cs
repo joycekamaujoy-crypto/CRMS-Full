@@ -21,14 +21,12 @@ namespace CRMS_API.Services.Implementations
 
         public async Task IngestTelemetryDataAsync(TelemetryPointDto data)
         {
-            // 2. Look up the vehicle to get its details
             var vehicle = await _context.Vehicles
-                .AsNoTracking() // Performance improvement, as we don't need to track changes
+                .AsNoTracking() 
                 .FirstOrDefaultAsync(v => v.Id == data.VehicleId);
 
-            if (vehicle == null) return; // Don't proceed if the vehicle doesn't exist
+            if (vehicle == null) return;
 
-            // 3. Create the enriched broadcast object
             var broadcastData = new TelemetryBroadcastDto
             {
                 VehicleId = data.VehicleId,
@@ -40,11 +38,8 @@ namespace CRMS_API.Services.Implementations
                 MakeModel = $"{vehicle.Make} {vehicle.Model}"
             };
 
-            // 4. Broadcast the enriched data to all connected clients
-            // The method name "ReceiveTelemetryUpdate" MUST match your JavaScript client's .on() listener
             await _hubContext.Clients.All.SendAsync("ReceiveTelemetryUpdate", broadcastData);
 
-            // (Optional) Save the raw telemetry point to the database
             var telemetryEntity = new TelemetryPoint
             {
                 VehicleId = data.VehicleId,
@@ -60,13 +55,11 @@ namespace CRMS_API.Services.Implementations
         {
             var fiveMinutesAgo = DateTime.UtcNow.AddMinutes(-5);
 
-            // This query counts the unique vehicles that belong to the owner
-            // and have sent a telemetry point recently.
             return await _context.TelemetryPoints
                 .Where(tp => tp.Vehicle.OwnerId == ownerId && tp.TimeStamp >= fiveMinutesAgo)
-                .Select(tp => tp.VehicleId) // Select only the vehicle IDs
-                .Distinct()                // Get only the unique ones
-                .CountAsync();             // Count them
+                .Select(tp => tp.VehicleId) 
+                .Distinct()                
+                .CountAsync();             
         }
     }
 }

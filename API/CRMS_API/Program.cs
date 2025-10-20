@@ -1,13 +1,12 @@
 using CRMS_API.Domain.Data;
 using Microsoft.EntityFrameworkCore;
 using CRMS_API.Services.Interfaces;
-using CRMS_API.Services. Helpers;
+using CRMS_API.Services.Helpers;
 using CRMS_API.Domain.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-//using CRMS_API.Api.Hubs;
 using Microsoft.OpenApi.Models;
 using CRMS_API.Services.Implementations;
 using CRMS_API.Api.Hubs;
@@ -15,10 +14,8 @@ using CRMS_API.Services.Background;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -75,8 +72,7 @@ builder.Services.AddAuthentication(options =>
 })
     .AddJwtBearer(x =>
     {
-        x.RequireHttpsMetadata = false; // change to true in prod
-        x.SaveToken = true;
+        x.RequireHttpsMetadata = false; x.SaveToken = true;
         x.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
@@ -117,7 +113,7 @@ builder.Services.AddCors(options =>
         {
             policy.AllowAnyHeader()
                   .AllowAnyMethod()
-                  .WithOrigins("https://localhost:7269", "http://localhost:5177") // Specify your MVC frontend URL(s)
+                  .WithOrigins("https://localhost:7269", "http://localhost:5177") 
                   .AllowCredentials();
         });
 });
@@ -125,7 +121,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

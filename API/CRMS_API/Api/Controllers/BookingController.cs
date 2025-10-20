@@ -67,7 +67,7 @@ namespace CRMS_API.Api.Controllers
             return Ok(new { message = result });
         }
 
-        [HttpPut("{id}/status")] // Using PUT for updating a resource
+        [HttpPut("{id}/status")] 
         [Authorize(Roles = "Owner")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] RentalUpdateStatusDto model)
         {
@@ -78,13 +78,10 @@ namespace CRMS_API.Api.Controllers
 
             if (!success)
             {
-                // Could be not found, or user doesn't own it, or a business rule failed.
-                // Return 404 for security.
                 return NotFound(new { message = "Booking not found or update is not allowed." });
             }
 
-            return Ok(); // Success
-        }
+            return Ok();         }
 
         [HttpGet("mine")]
         public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetMyBookings()

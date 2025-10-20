@@ -8,7 +8,6 @@
         public double Speed { get; set; }
         public DateTime TimeStamp { get; set; }
 
-        // --- Enriched Data ---
         public string Plate { get; set; }
         public string MakeModel { get; set; }
     }

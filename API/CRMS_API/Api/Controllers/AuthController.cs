@@ -22,7 +22,7 @@ namespace CRMS_API.Api.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState); // 400
+                return BadRequest(ModelState); 
             }
 
             var result = await _authService.RegisterAsync(request);
@@ -31,7 +31,7 @@ namespace CRMS_API.Api.Controllers
                 return Conflict(new { message = "Registration Failed. A user with this email already exists" });
             }
 
-            return Ok(result); //200
+            return Ok(result); 
         }
 
         [AllowAnonymous]
