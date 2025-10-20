@@ -67,42 +67,23 @@ namespace CRMS_API.Api.Controllers
             return Ok(new { message = result });
         }
 
-        [HttpPut("{bookingId}/approve")]
+        [HttpPut("{id}/status")] // Using PUT for updating a resource
         [Authorize(Roles = "Owner")]
-        public async Task<ActionResult<BookingResponseDto>> ApproveBooking(int bookingId)
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] RentalUpdateStatusDto model)
         {
             var ownerId = GetAuthenticatedUserId();
-            if (!ownerId.HasValue)
+            if (!ownerId.HasValue) return Unauthorized();
+
+            var success = await _bookingService.UpdateBookingStatusAsync(id, model.NewStatus, ownerId.Value);
+
+            if (!success)
             {
-                return Unauthorized(new { message = "User not identified from token" });
+                // Could be not found, or user doesn't own it, or a business rule failed.
+                // Return 404 for security.
+                return NotFound(new { message = "Booking not found or update is not allowed." });
             }
 
-            var booking = await _bookingService.ApproveBookingAsync(bookingId, ownerId.Value);
-            if(booking == null)
-            {
-                return Forbid();
-            }
-
-            return Ok(booking);
-        }
-
-        [HttpPut("{bookingId}/reject")]
-        [Authorize(Roles = "Owner")]
-        public async Task<ActionResult<BookingResponseDto>> RejectBooking(int bookingId)
-        {
-            var ownerId = GetAuthenticatedUserId();
-            if (!ownerId.HasValue)
-            {
-                return Unauthorized(new { message = "User not identified from token" });
-            }
-
-            var booking = await _bookingService.RejectBookingAsync(bookingId, ownerId.Value);
-            if(booking == null)
-            {
-                return Forbid();
-            }
-
-            return Ok(booking);
+            return Ok(); // Success
         }
 
         [HttpGet("mine")]
@@ -133,6 +114,47 @@ namespace CRMS_API.Api.Controllers
             var bookings = await _bookingService.GetOwnerBookingsAsync(ownerId.Value);
 
             return Ok(bookings);
+        }
+
+        [HttpGet("count/pending")]
+        [Authorize(Roles = "Owner")]
+        public async Task<ActionResult<int>> GetTotalPendingApprovalsCount()
+        {
+            var count = await _bookingService.GetTotalPendingApprovalsCountAsync();
+            return Ok(count);
+        }
+
+        [HttpGet("count/owner/active")]
+        [Authorize(Roles = "Owner")]
+        public async Task<ActionResult<int>> GetActiveRentalsByOwnerCount()
+        {
+            var ownerId = GetAuthenticatedUserId();
+            if (!ownerId.HasValue) return Unauthorized();
+
+            var count = await _bookingService.GetActiveRentalsByOwnerIdCountAsync(ownerId.Value);
+            return Ok(count);
+        }
+
+        [HttpGet("count/my-active")]
+        [Authorize(Roles = "Renter")]
+        public async Task<ActionResult<int>> GetMyActiveBookingsCount()
+        {
+            var renterId = GetAuthenticatedUserId();
+            if (!renterId.HasValue) return Unauthorized();
+
+            var count = await _bookingService.GetMyActiveBookingsCountAsync(renterId.Value);
+            return Ok(count);
+        }
+
+        [HttpGet("count/my-pending")]
+        [Authorize(Roles = "Renter")]
+        public async Task<ActionResult<int>> GetMyPendingBookingsCount()
+        {
+            var renterId = GetAuthenticatedUserId();
+            if (!renterId.HasValue) return Unauthorized();
+
+            var count = await _bookingService.GetMyPendingBookingsCountAsync(renterId.Value);
+            return Ok(count);
         }
     }
 }

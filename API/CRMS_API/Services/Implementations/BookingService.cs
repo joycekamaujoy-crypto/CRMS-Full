@@ -66,8 +66,8 @@ namespace CRMS_API.Services.Implementations
             {
                 Id = newBooking.Id,
                 VehicleId = newBooking.VehicleId,
-                VehicleMakeModel = $"{vehicle.Make} {vehicle.Model}",
-                VehiclePlate = vehicle.Plate,
+                MakeModel = $"{vehicle.Make} {vehicle.Model}",
+                Plate = vehicle.Plate,
                 RenterId = newBooking.RenterId,
                 RenterName = renter!.Name,
                 StartDate = newBooking.StartDate,
@@ -76,90 +76,106 @@ namespace CRMS_API.Services.Implementations
                 Status = newBooking.Status
             }, string.Empty);
         }
-        public async Task<BookingResponseDto?> ApproveBookingAsync(int bookingId, int ownerId)
-        {
-            return await ChangeBookingStatus(bookingId, ownerId, bookingStatus.Approved);
-        }
-
-        public async Task<BookingResponseDto?> RejectBookingAsync(int bookingId, int ownerId)
-        {
-            return await ChangeBookingStatus(bookingId, ownerId, bookingStatus.Cancelled);
-        }
-        private async Task<BookingResponseDto?> ChangeBookingStatus(int bookingId, int ownerId,bookingStatus newStatus)
+        public async Task<bool> UpdateBookingStatusAsync(int bookingId, bookingStatus newStatus, int ownerId)
         {
             var booking = await _context.Bookings
                 .Include(b => b.Vehicle)
-                    .ThenInclude(v => v.Owner)
-                .Include(b => b.Renter)
                 .FirstOrDefaultAsync(b => b.Id == bookingId);
-            if (booking == null)
-                return null;
-            /* if (booking.Vehicle.OwnerId != authorizedUserId)
-             {
-                 return null;
-             } */
-            if (booking.Status != bookingStatus.Pending)
-                return null;
+
+            // Security check: Booking must exist AND belong to the owner making the request.
+            if (booking == null || booking.Vehicle.OwnerId != ownerId)
+            {
+                return false; // Not found or unauthorized
+            }
+
+            // Business Logic: Add any rules here, e.g., can't cancel an active booking.
+            if (booking.Status == bookingStatus.Active && newStatus == bookingStatus.Cancelled)
+            {
+                // Example rule: Prevent cancelling a rental that's already in progress.
+                return false;
+            }
 
             booking.Status = newStatus;
             await _context.SaveChangesAsync();
-
-            return new BookingResponseDto
-            {
-                Id = booking.Id,
-                VehicleId = booking.VehicleId,
-                VehicleMakeModel = $"{booking.Vehicle.Make} {booking.Vehicle.Model}",
-                VehiclePlate = booking.Vehicle.Plate,
-                RenterId = booking.RenterId,
-                RenterName = booking.Renter.Name,
-                StartDate = booking.StartDate,
-                EndDate = booking.EndDate,
-                //TotalPrice = booking.TotalPrice,
-                Status = booking.Status
-            };    
+            return true;
         }
 
         public async Task<IEnumerable<BookingResponseDto>> GetRenterBookingsAsync(int renterId)
         {
-            return await _context.Bookings
-                .Where(b => b.RenterId == renterId)
-                .Include(b => b.Vehicle)
-                .Include(b => b.Renter)
-                .Select(b => new BookingResponseDto
-                {
-                    Id = b.Id,
-                    VehicleId = b.VehicleId,
-                    VehicleMakeModel = $"{b.Vehicle.Make} {b.Vehicle.Model}",
-                    VehiclePlate = b.Vehicle.Plate,
-                    RenterId = b.RenterId,
-                    RenterName = b.Renter.Name,
-                    StartDate = b.StartDate,
-                    EndDate = b.EndDate,
-                   // TotalPrice = b.TotalPrice,
-                    Status = b.Status
-                })
-                .ToListAsync();
+            var bookingsFromDb = await _context.Bookings
+                    .Include(b => b.Vehicle)
+                    .Include(b => b.Renter)
+                    .Where(b => b.RenterId == renterId)
+                    .OrderByDescending(b => b.StartDate)
+                    .ToListAsync(); // This runs the SQL query
+
+            // 2. Map the results in memory using standard LINQ to Objects.
+            //    This is now safe because all the data is loaded.
+            return bookingsFromDb.Select(b => MapBookingToResponseDto(b));
         }
         public async Task<IEnumerable<BookingResponseDto>> GetOwnerBookingsAsync(int ownerId)
         {
+            var bookingsFromDb = await _context.Bookings
+                    .Include(b => b.Vehicle)
+                    .Include(b => b.Renter)
+                    .Where(b => b.Vehicle.OwnerId == ownerId)
+                    .OrderByDescending(b => b.StartDate)
+                    .ToListAsync(); // This runs the SQL query
+
+            // 2. Map the results in memory.
+            return bookingsFromDb.Select(b => MapBookingToResponseDto(b));
+        }
+        public async Task<int> GetTotalPendingApprovalsCountAsync()
+        {
+            // Counts all bookings in the system with the status "Pending"
             return await _context.Bookings
-                .Include(b => b.Vehicle)
-                .Where(b => b.Vehicle.OwnerId == ownerId) // Filter by the owner of the vehicle
-                .Include(b => b.Renter)
-                .Select(b => new BookingResponseDto
-                {
-                    Id = b.Id,
-                    VehicleId = b.VehicleId,
-                    VehicleMakeModel = $"{b.Vehicle.Make} {b.Vehicle.Model}",
-                    VehiclePlate = b.Vehicle.Plate,
-                    RenterId = b.RenterId,
-                    RenterName = b.Renter.Name,
-                    StartDate = b.StartDate,
-                    EndDate = b.EndDate,
-                   // TotalPrice = b.TotalPrice,
-                    Status = b.Status
-                })
-                .ToListAsync();
+                .CountAsync(b => b.Status == bookingStatus.Pending);
+        }
+
+        public async Task<int> GetActiveRentalsByOwnerIdCountAsync(int ownerId)
+        {
+            var now = DateTime.UtcNow;
+
+            // Counts bookings that are approved, ongoing, AND belong to a vehicle owned by the specified ownerId
+            return await _context.Bookings
+                .CountAsync(b => b.Vehicle.OwnerId == ownerId &&
+                                 b.Status == bookingStatus.Approved &&
+                                 b.StartDate <= now &&
+                                 b.EndDate >= now);
+        }
+
+        public async Task<int> GetMyActiveBookingsCountAsync(int renterId)
+        {
+            var now = DateTime.UtcNow; // Get the current time once
+
+            // An active booking is one that has been approved and is currently ongoing.
+            return await _context.Bookings
+                .CountAsync(b => b.RenterId == renterId &&
+                                 b.Status == bookingStatus.Approved && // It must have been approved
+                                 b.StartDate <= now &&                  // The rental period has started
+                                 b.EndDate >= now);                     // The rental period has not ended
+        }
+
+        public async Task<int> GetMyPendingBookingsCountAsync(int renterId)
+        {
+            // Counts bookings for the specific renterId that are "Pending" approval
+            return await _context.Bookings
+                .CountAsync(b => b.RenterId == renterId && b.Status == bookingStatus.Pending);
+        }
+        private BookingResponseDto MapBookingToResponseDto(Booking booking)
+        {
+            return new BookingResponseDto
+            {
+                Id = booking.Id,
+                StartDate = booking.StartDate,
+                EndDate = booking.EndDate,
+                Status = booking.Status,
+                Plate = booking.Vehicle?.Plate ?? "N/A",
+                MakeModel = $"{booking.Vehicle?.Make} {booking.Vehicle?.Model}",
+                RenterName = booking.Renter?.Name ?? "N/A",
+                VehicleId = booking.VehicleId,
+                RenterId = booking.RenterId
+            };
         }
     }
 }

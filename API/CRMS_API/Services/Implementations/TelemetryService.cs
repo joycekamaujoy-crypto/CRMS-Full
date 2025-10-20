@@ -4,6 +4,7 @@ using CRMS_API.Domain.Entities;
 using CRMS_API.Domain.Data;
 using Microsoft.AspNetCore.SignalR;
 using CRMS_API.Api.Hubs;
+using Microsoft.EntityFrameworkCore;
 
 namespace CRMS_API.Services.Implementations
 {
@@ -35,6 +36,18 @@ namespace CRMS_API.Services.Implementations
             await _hubContext.Clients.All.SendAsync("RecieveTelemetryUpdate", data);
 
             return data;
+        }
+        public async Task<int> GetActiveTelemetryCountAsync(int ownerId)
+        {
+            var fiveMinutesAgo = DateTime.UtcNow.AddMinutes(-5);
+
+            // This query counts the unique vehicles that belong to the owner
+            // and have sent a telemetry point recently.
+            return await _context.TelemetryPoints
+                .Where(tp => tp.Vehicle.OwnerId == ownerId && tp.TimeStamp >= fiveMinutesAgo)
+                .Select(tp => tp.VehicleId) // Select only the vehicle IDs
+                .Distinct()                // Get only the unique ones
+                .CountAsync();             // Count them
         }
     }
 }
