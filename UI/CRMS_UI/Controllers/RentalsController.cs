@@ -145,7 +145,6 @@ namespace CRMS_UI.Controllers
             var authCheck = CheckAuth();
             if (authCheck != null) return authCheck;
 
-            // Why: Enforce Owner role access for status updates.
             if (HttpContext.Session.GetString("UserRole") != "Owner")
             {
                 TempData["ErrorMessage"] = "You are not authorized to change booking status.";
@@ -156,17 +155,25 @@ namespace CRMS_UI.Controllers
             {
                 var updateModel = new RentalUpdateStatusViewModel { RentalId = id, NewStatus = newStatus };
 
-                // API call to update status (Owner endpoint)
-                await _apiService.PutAsync<RentalViewModel, RentalUpdateStatusViewModel>($"booking/{id}/status", updateModel, HttpContext);
+                // --- THE FIX IS HERE ---
+                // Change the expected return type from RentalViewModel to bool.
+                var success = await _apiService.PutAsync<bool, RentalUpdateStatusViewModel>($"api/booking/{id}/status", updateModel, HttpContext);
 
-                TempData["SuccessMessage"] = $"Booking #{id} status successfully changed to {newStatus}.";
-                return RedirectToAction("Index");
+                if (success)
+                {
+                    TempData["SuccessMessage"] = $"Booking #{id} status successfully changed to {newStatus}.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = $"Failed to update status for booking #{id}. The request was not successful.";
+                }
             }
             catch (HttpRequestException ex)
             {
                 TempData["ErrorMessage"] = $"Failed to update status: {ex.Message}";
-                return RedirectToAction("Index");
             }
+
+            return RedirectToAction("Index");
         }
     }
 }
