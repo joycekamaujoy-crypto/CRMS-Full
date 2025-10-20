@@ -19,20 +19,22 @@ namespace CRMS_API.Api.Controllers
         }
 
         [HttpPost("ingest")]
-        public async Task<ActionResult<TelemetryPointDto>> IngestData([FromBody] TelemetryPointDto data)
+        [Authorize] // It's good practice to secure this endpoint
+        public async Task<IActionResult> IngestData([FromBody] TelemetryPointDto data)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var result = await _telemetryService.IngestTelemetryDataAsync(data);
-            if (result == null)
-            {
-                return BadRequest(new { message = "Telemetry Ingestion Failed" });
-            }
+            // The service method now handles everything (saving and broadcasting).
+            // It doesn't return a value, so we just 'await' its completion.
+            await _telemetryService.IngestTelemetryDataAsync(data);
 
-            return Accepted(result); //202
+            // Return a 202 Accepted response. This is the correct HTTP status for
+            // a "fire-and-forget" operation where the request is accepted
+            // for processing but is not yet complete.
+            return Accepted();
         }
         [HttpGet("count/active")]
         public async Task<ActionResult<int>> GetActiveTelemetryCount()

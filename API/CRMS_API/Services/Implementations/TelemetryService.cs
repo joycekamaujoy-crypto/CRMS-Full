@@ -19,9 +19,33 @@ namespace CRMS_API.Services.Implementations
             _hubContext = hubContext;
         }
 
-        public async Task<TelemetryPointDto?> IngestTelemetryDataAsync(TelemetryPointDto data)
+        public async Task IngestTelemetryDataAsync(TelemetryPointDto data)
         {
-            var newPoint = new TelemetryPoint
+            // 2. Look up the vehicle to get its details
+            var vehicle = await _context.Vehicles
+                .AsNoTracking() // Performance improvement, as we don't need to track changes
+                .FirstOrDefaultAsync(v => v.Id == data.VehicleId);
+
+            if (vehicle == null) return; // Don't proceed if the vehicle doesn't exist
+
+            // 3. Create the enriched broadcast object
+            var broadcastData = new TelemetryBroadcastDto
+            {
+                VehicleId = data.VehicleId,
+                Latitude = data.Latitude,
+                Longitude = data.Longitude,
+                Speed = data.Speed,
+                TimeStamp = data.TimeStamp,
+                Plate = vehicle.Plate,
+                MakeModel = $"{vehicle.Make} {vehicle.Model}"
+            };
+
+            // 4. Broadcast the enriched data to all connected clients
+            // The method name "ReceiveTelemetryUpdate" MUST match your JavaScript client's .on() listener
+            await _hubContext.Clients.All.SendAsync("ReceiveTelemetryUpdate", broadcastData);
+
+            // (Optional) Save the raw telemetry point to the database
+            var telemetryEntity = new TelemetryPoint
             {
                 VehicleId = data.VehicleId,
                 Latitude = data.Latitude,
@@ -29,13 +53,8 @@ namespace CRMS_API.Services.Implementations
                 Speed = data.Speed,
                 TimeStamp = data.TimeStamp
             };
-
-            _context.TelemetryPoints.Add(newPoint);
+            _context.TelemetryPoints.Add(telemetryEntity);
             await _context.SaveChangesAsync();
-
-            await _hubContext.Clients.All.SendAsync("RecieveTelemetryUpdate", data);
-
-            return data;
         }
         public async Task<int> GetActiveTelemetryCountAsync(int ownerId)
         {
