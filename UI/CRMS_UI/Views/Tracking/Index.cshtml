@@ -45,7 +45,7 @@
                 iconAnchor: [16, 16]
             });
 
-            const hubUrl = '@ViewData["ApiBaseUrl"]/telemetryHub';
+            const hubUrl = '@ViewData["ApiSettings:SignalRHub"]';
             const token = '@Context.Session.GetString("JWToken")';
             const telemetryFeed = document.getElementById('telemetryFeed');
 

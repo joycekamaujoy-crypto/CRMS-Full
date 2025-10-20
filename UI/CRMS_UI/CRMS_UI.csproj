@@ -6,4 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="Views\Tracking\5p2dmy5g.pjz~" />
+  </ItemGroup>
+
 </Project>
