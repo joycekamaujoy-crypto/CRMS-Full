@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using CRMS_UI.Services.Interfaces;
 using CRMS_UI.ViewModels.Dashboard;
+using System.Threading.Tasks; // Make sure this is included for Task
 
 namespace CRMS_UI.Controllers
 {
@@ -13,15 +14,13 @@ namespace CRMS_UI.Controllers
             _apiService = apiService;
         }
 
-        // Why: Middleware-like check to ensure the user is logged in before proceeding.
         private IActionResult CheckAuthentication()
         {
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("JWToken")))
             {
-                // If not authenticated, force them to log in
                 return RedirectToAction("Login", "Auth");
             }
-            return null; // Return null if authenticated (means check passed)
+            return null;
         }
 
         // GET: /Dashboard/AdminDashboard
@@ -30,7 +29,6 @@ namespace CRMS_UI.Controllers
             var authCheck = CheckAuthentication();
             if (authCheck != null) return authCheck;
 
-            // Why: Enforce role-based access for the Owner dashboard.
             if (HttpContext.Session.GetString("UserRole") != "Owner")
             {
                 return RedirectToAction("UserDashboard");
@@ -45,37 +43,65 @@ namespace CRMS_UI.Controllers
 
             try
             {
-                // Fetch active rentals count
-                viewModel.ActiveRentals = await _apiService.GetAsync<int>("booking/owner/all", HttpContext);
+                // Start all API calls in parallel
+                // NOTE: Update these paths to your real API endpoints
+                var activeRentalsTask = _apiService.GetAsync<int>("booking/count/owner/active", HttpContext);
+                var totalVehiclesTask = _apiService.GetAsync<int>("vehicle/count/all", HttpContext);
+                var pendingApprovalsTask = _apiService.GetAsync<int>("booking/count/pending", HttpContext);
+                var trackingEnabledTask = _apiService.GetAsync<int>("telemetry/count/active", HttpContext);
 
-                // Fetch total vehicles
-                viewModel.TotalVehicles = await _apiService.GetAsync<int>("vehicle/all/all", HttpContext);
+                // Wait for all of them to complete
+                await Task.WhenAll(activeRentalsTask, totalVehiclesTask, pendingApprovalsTask, trackingEnabledTask);
 
-                // Fetch pending approvals
-                viewModel.PendingApprovals = await _apiService.GetAsync<int>("rentals/pending/count", HttpContext);
-
-                // Fetch tracking enabled percent (example)
-                viewModel.TrackingEnabledPercent = await _apiService.GetAsync<int>("telemetry/ingest/all", HttpContext);
+                // Assign the results from the completed tasks
+                viewModel.ActiveRentals = activeRentalsTask.Result;
+                viewModel.TotalVehicles = totalVehiclesTask.Result;
+                viewModel.PendingApprovals = pendingApprovalsTask.Result;
+                viewModel.TrackingEnabledPercent = trackingEnabledTask.Result;
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"Failed to fetch dashboard data: {ex.Message}";
             }
 
             return View(viewModel);
-
-            // NOTE: In a real app, we would fetch KPI data here using _apiService.
         }
 
         // GET: /Dashboard/UserDashboard
-        public IActionResult UserDashboard()
+        public async Task<IActionResult> UserDashboard()
         {
             var authCheck = CheckAuthentication();
             if (authCheck != null) return authCheck;
 
             ViewData["Title"] = "User Dashboard";
-            // NOTE: In a real app, we would fetch car availability and user's active bookings here.
-            return View();
+
+            var viewModel = new UserDashboardViewModel
+            {
+                UserName = HttpContext.Session.GetString("UserName") ?? "Renter"
+            };
+
+            try
+            {
+                // Start all API calls in parallel
+                // NOTE: Update these paths to your real API endpoints
+                var availableCarsTask = _apiService.GetAsync<int>("vehicle/count/available", HttpContext);
+                var activeBookingsTask = _apiService.GetAsync<int>("booking/count/my-active", HttpContext);
+                var pendingApprovalsTask = _apiService.GetAsync<int>("booking/count/my-pending", HttpContext);
+
+                // Wait for all of them to complete
+                await Task.WhenAll(availableCarsTask, activeBookingsTask, pendingApprovalsTask);
+
+                // Assign the results from the completed tasks
+                viewModel.AvailableCarsCount = availableCarsTask.Result;
+                viewModel.ActiveBookingsCount = activeBookingsTask.Result;
+                viewModel.PendingApprovalsCount = pendingApprovalsTask.Result;
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Failed to fetch your dashboard data: {ex.Message}";
+            }
+
+            return View(viewModel);
         }
     }
 }

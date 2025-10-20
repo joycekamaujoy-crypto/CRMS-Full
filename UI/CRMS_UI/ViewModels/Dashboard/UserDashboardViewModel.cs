@@ -2,8 +2,12 @@
 {
     public class UserDashboardViewModel
     {
-        public int MyActiveRentals { get; set; }
-        public int AvailableVehicles { get; set; }
-        public string UserName { get; set; } = string.Empty;
+        public string UserName { get; set; } = "Renter";
+
+        public int AvailableCarsCount { get; set; }
+
+        public int ActiveBookingsCount { get; set; }
+
+        public int PendingApprovalsCount { get; set; }
     }
 }

@@ -36,7 +36,7 @@ namespace CRMS_UI.Controllers
 
                 HttpContext.Session.SetString("JWToken", response.Token);
                 HttpContext.Session.SetString("UserRole", response.Role);
-                HttpContext.Session.SetString("UserName", response.UserName);
+                HttpContext.Session.SetString("UserName", response.Name);
 
                 if (response.Role.Equals("Owner", StringComparison.OrdinalIgnoreCase))
                 {

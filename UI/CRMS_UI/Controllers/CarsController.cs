@@ -29,26 +29,36 @@ namespace CRMS_UI.Controllers
         }
 
         // GET: /Cars
-        // Available to both Renter (for browsing) and Owner (for listing)
+        // Available to both Renter (for browsing) and Owner (for managing)
         public async Task<IActionResult> Index()
         {
             var authCheck = CheckAuth();
             if (authCheck != null) return authCheck;
 
-            ViewData["Title"] = "Available Fleet";
             var userRole = HttpContext.Session.GetString("UserRole");
+            var isOwner = userRole == "Owner";
 
             try
             {
-                // Fetches all vehicles from the backend API.
-                var cars = await _apiService.GetAsync<List<CarViewModel>>("vehicle/all", HttpContext);
+                List<CarViewModel> cars;
+                if (isOwner)
+                {
+                    // --- REFACTORED LOGIC ---
+                    // Owners should only see their own vehicles from a secure endpoint.
+                    ViewData["Title"] = "My Fleet Management";
+                    cars = await _apiService.GetAsync<List<CarViewModel>>("vehicle/owner", HttpContext);
+                }
+                else
+                {
+                    // Renters see all available vehicles to browse for rental.
+                    ViewData["Title"] = "Available Fleet for Rent";
+                    cars = await _apiService.GetAsync<List<CarViewModel>>("vehicle/all", HttpContext);
+                }
                 return View(cars);
             }
             catch (HttpRequestException ex)
             {
-                // Handle API communication errors
                 TempData["ErrorMessage"] = $"Could not fetch vehicles: {ex.Message}";
-                // Return an empty list or redirect depending on severity
                 return View(new List<CarViewModel>());
             }
         }

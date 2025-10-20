@@ -1,4 +1,6 @@
-﻿@{
+﻿@model CRMS_UI.ViewModels.Dashboard.UserDashboardViewModel
+
+@{
     // Why: Ensure the correct layout and title are used.
     Layout = "_Layout";
     ViewData["Title"] = "User Dashboard";
@@ -25,7 +27,7 @@
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Cars Available Now</dt>
                             <dd>
-                                <div class="text-3xl font-extrabold text-gray-900">8</div>
+                                <div class="text-3xl font-extrabold text-gray-900">@Model.AvailableCarsCount</div>
                             </dd>
                         </dl>
                     </div>
@@ -47,7 +49,7 @@
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Active Bookings</dt>
                             <dd>
-                                <div class="text-3xl font-extrabold text-gray-900">1</div>
+                                <div class="text-3xl font-extrabold text-gray-900">@Model.ActiveBookingsCount</div>
                             </dd>
                         </dl>
                     </div>
@@ -69,7 +71,7 @@
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Awaiting Approval</dt>
                             <dd>
-                                <div class="text-3xl font-extrabold text-gray-900">0</div>
+                                <div class="text-3xl font-extrabold text-gray-900">@Model.PendingApprovalsCount</div>
                             </dd>
                         </dl>
                     </div>
