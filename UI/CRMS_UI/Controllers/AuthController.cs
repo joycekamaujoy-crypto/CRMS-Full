@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using CRMS_UI.Services.Interfaces;
 using CRMS_UI.ViewModels.Auth;
+using System.Net;
 
 namespace CRMS_UI.Controllers
 {
@@ -11,6 +12,43 @@ namespace CRMS_UI.Controllers
         public AuthController(IApiService apiService)
         {
             _apiService = apiService;
+        }
+
+        [HttpGet]
+        public IActionResult Register()
+        {
+            ViewData["Title"] = "Register";
+            return View(new RegisterViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                await _apiService.PostAsync<AuthResponse, RegisterViewModel>("auth/register", model, HttpContext);
+
+                TempData["SuccessMessage"] = "Registration successful! Please sign in to continue.";
+                return RedirectToAction("Login");
+            }
+            catch (HttpRequestException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.Conflict)
+                {
+                    ModelState.AddModelError("Email", "A user with this email already exists.");
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, $"An error occurred: {ex.Message}");
+                }
+                return View(model);
+            }
         }
 
         [HttpGet]
