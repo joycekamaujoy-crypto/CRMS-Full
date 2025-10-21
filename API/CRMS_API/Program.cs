@@ -54,6 +54,7 @@ builder.Services.AddScoped<IMpesaSimulation, MpesaSimulation>();
 builder.Services.AddScoped<ITelemetryService, TelemetryService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<IJwtGenerator, JwtGenerator>();
+builder.Services.AddSingleton<IEmailService, EmailService>();
 
 builder.Services.AddHostedService<GpsSimulatorService>();
 

@@ -24,6 +24,9 @@ namespace CRMS_API.Domain.Entities
 
         public userRole Role { get; set; }
 
+        public bool IsEmailConfirmed { get; set; } = false;
+        public string? EmailConfirmationToken { get; set; }
+
         public ICollection<Booking> RentedBookings { get; set; }
         public ICollection<Vehicle> OwnedVehicles { get; set; }
     }

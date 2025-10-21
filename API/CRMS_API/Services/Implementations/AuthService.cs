@@ -4,6 +4,7 @@ using CRMS_API.Domain.Entities;
 using CRMS_API.Domain.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using CRMS_API.Services.Exceptions;
 
 namespace CRMS_API.Services.Implementations
 {
@@ -13,60 +14,75 @@ namespace CRMS_API.Services.Implementations
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly IConfiguration _configuration;
         private readonly IJwtGenerator _jwtGenerator;
+        private readonly ILogger<AuthService> _logger;
+        private readonly IEmailService _emailService;
 
-        public AuthService(AppDbContext context, IPasswordHasher<User> passwordHasher, IConfiguration configuration, IJwtGenerator jwtGenerator)
+        public AuthService(AppDbContext context, IPasswordHasher<User> passwordHasher, IConfiguration configuration, IJwtGenerator jwtGenerator, ILogger<AuthService> logger, IEmailService emailService)
         {
             _context = context;
             _passwordHasher = passwordHasher;
             _configuration = configuration;
             _jwtGenerator = jwtGenerator;
+            _logger = logger;
+            _emailService = emailService;
         }
 
-        public async Task<AuthResponseDto?> RegisterAsync(RegisterRequestDto request)
+        public async Task<bool> RegisterAsync(RegisterRequestDto request)
         {
             var existingUser = await _context.Users.AnyAsync(u => u.Email == request.Email);
             if (existingUser)
             {
-                return null;
+                return false; 
             }
+
+            var confirmationToken = Guid.NewGuid().ToString();
 
             var newUser = new User
             {
                 Name = request.Name,
                 Email = request.Email,
-                Role = request.Role
+                Role = request.Role,
+                IsEmailConfirmed = false,
+                EmailConfirmationToken = confirmationToken
             };
 
             newUser.PasswordHash = _passwordHasher.HashPassword(newUser, request.Password);
-
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            var token = _jwtGenerator.GenerateJwtToken(newUser.Id, newUser.Email, newUser.Role.ToString());
+            var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "https://localhost:7200";
+            var confirmationLink = $"{apiBaseUrl}/api/auth/confirm?email={newUser.Email}&token={confirmationToken}";
 
-            return new AuthResponseDto
+            try
             {
-                userId = newUser.Id,
-                Name = newUser.Name,
-                Email = newUser.Email,
-                Role = newUser.Role.ToString(),
-                Token = token
-            };
+                await _emailService.SendConfirmationEmailAsync(newUser.Email, confirmationLink);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send confirmation email for user {Email}", newUser.Email);
+                
+            }
+
+            return true; 
         }
 
         public async Task<AuthResponseDto?> LoginAsync(LoginRequestDto request)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
             if (user == null)
             {
-                return null;
+                return null; 
             }
 
             var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
             if (verificationResult == PasswordVerificationResult.Failed)
             {
                 return null;
+            }
+
+            if (!user.IsEmailConfirmed)
+            {
+                throw new EmailNotConfirmedException("Email has not been confirmed. Please check your inbox.");
             }
 
             var token = _jwtGenerator.GenerateJwtToken(user.Id, user.Email, user.Role.ToString());
@@ -79,6 +95,21 @@ namespace CRMS_API.Services.Implementations
                 Role = user.Role.ToString(),
                 Token = token
             };
+        }
+        public async Task<bool> ConfirmEmailAsync(string email, string token)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user == null || user.EmailConfirmationToken != token)
+            {
+                return false; 
+            }
+
+            user.IsEmailConfirmed = true;
+            user.EmailConfirmationToken = null; 
+            await _context.SaveChangesAsync();
+
+            return true; 
         }
     }
 }

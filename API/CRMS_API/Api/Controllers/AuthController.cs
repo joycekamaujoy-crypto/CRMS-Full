@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using CRMS_API.Domain.DTOs;
+using CRMS_API.Services.Exceptions;
 using CRMS_API.Services.Interfaces;
-using CRMS_API.Domain.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CRMS_API.Api.Controllers
 {
@@ -18,20 +19,20 @@ namespace CRMS_API.Api.Controllers
 
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterRequestDto request)
+        public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState); 
+                return BadRequest(ModelState);
             }
 
-            var result = await _authService.RegisterAsync(request);
-            if (result == null)
+            var success = await _authService.RegisterAsync(request);
+            if (!success)
             {
-                return Conflict(new { message = "Registration Failed. A user with this email already exists" });
+                return Conflict(new { message = "Registration Failed. A user with this email already exists." });
             }
 
-            return Ok(result); 
+            return Ok(new { message = "Registration successful. Please check your email to confirm your account." });
         }
 
         [AllowAnonymous]
@@ -43,13 +44,47 @@ namespace CRMS_API.Api.Controllers
                 return BadRequest(ModelState);
             }
 
-            var result = await _authService.LoginAsync(request);
-            if(result == null)
+            try
             {
-                return Unauthorized(new { message = "Invalid email or password" });
+                var result = await _authService.LoginAsync(request);
+
+                if (result == null)
+                {
+                    return Unauthorized(new { message = "Invalid email or password." });
+                }
+
+                return Ok(result);
+            }
+            catch (EmailNotConfirmedException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpGet("confirm")]
+        public async Task<IActionResult> ConfirmEmail([FromQuery] string email, [FromQuery] string token)
+        {
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(token))
+            {
+                return BadRequest(new { message = "Invalid confirmation request." });
             }
 
-            return Ok(result);
+            var success = await _authService.ConfirmEmailAsync(email, token);
+            if (!success)
+            {
+                return BadRequest(new { message = "Invalid email or token." });
+            }
+
+            var htmlContent = @"
+                <html>
+                <body style='font-family: Arial, sans-serif; text-align: center; margin-top: 50px;'>
+                    <h1 style='color: #28a745;'>Email Confirmed!</h1>
+                    <p>Your email has been successfully verified.</p>
+                    <p>You can now <a href='/Auth/Login'>log in</a> to your account.</p>
+                </body>
+                </html>";
+            return Content(htmlContent, "text/html");
         }
     }
 }
