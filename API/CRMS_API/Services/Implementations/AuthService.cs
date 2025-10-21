@@ -27,12 +27,12 @@ namespace CRMS_API.Services.Implementations
             _emailService = emailService;
         }
 
-        public async Task<bool> RegisterAsync(RegisterRequestDto request)
+        public async Task<string?> RegisterAsync(RegisterRequestDto request)
         {
             var existingUser = await _context.Users.AnyAsync(u => u.Email == request.Email);
             if (existingUser)
             {
-                return false; 
+                return null;
             }
 
             var confirmationToken = Guid.NewGuid().ToString();
@@ -50,8 +50,8 @@ namespace CRMS_API.Services.Implementations
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "https://localhost:7200";
-            var confirmationLink = $"{apiBaseUrl}/api/auth/confirm?email={newUser.Email}&token={confirmationToken}";
+            var apiBaseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7200";
+            var confirmationLink = $"{apiBaseUrl}/auth/confirm?email={newUser.Email}&token={confirmationToken}";
 
             try
             {
@@ -60,10 +60,9 @@ namespace CRMS_API.Services.Implementations
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send confirmation email for user {Email}", newUser.Email);
-                
             }
 
-            return true; 
+            return confirmationLink;
         }
 
         public async Task<AuthResponseDto?> LoginAsync(LoginRequestDto request)

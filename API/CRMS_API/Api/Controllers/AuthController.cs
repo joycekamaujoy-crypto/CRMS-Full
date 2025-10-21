@@ -26,13 +26,17 @@ namespace CRMS_API.Api.Controllers
                 return BadRequest(ModelState);
             }
 
-            var success = await _authService.RegisterAsync(request);
-            if (!success)
+            var confirmationLink = await _authService.RegisterAsync(request);
+            if (confirmationLink == null)
             {
                 return Conflict(new { message = "Registration Failed. A user with this email already exists." });
             }
 
-            return Ok(new { message = "Registration successful. Please check your email to confirm your account." });
+            return Ok(new
+            {
+                message = "Registration successful. Please check your email to confirm your account.",
+                devConfirmationLink = confirmationLink
+            });
         }
 
         [AllowAnonymous]
