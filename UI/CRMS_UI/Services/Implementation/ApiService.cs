@@ -1,7 +1,8 @@
 ﻿using System.Text;
-using System.Text.Json;
-
 using CRMS_UI.Services.Interfaces;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace CRMS_UI.Services.Implementation
 {
@@ -60,21 +61,35 @@ namespace CRMS_UI.Services.Implementation
         {
             var response = await _httpClient.SendAsync(request);
 
-            if (!response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"API Error: {response.StatusCode}. Content: {errorContent}");
-                throw new HttpRequestException($"API request failed with status code {response.StatusCode}.");
+                if (response.StatusCode == System.Net.HttpStatusCode.NoContent || response.Content.Headers.ContentLength == 0)
+                {
+                    return typeof(T) == typeof(bool) ? (T)(object)true : default(T);
+                }
+
+                var jsonString = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<T>(jsonString);
             }
 
-            var content = await response.Content.ReadAsStringAsync();
+            var errorJson = await response.Content.ReadAsStringAsync();
+            string errorMessage = "An unknown error occurred.";
 
-            if (string.IsNullOrEmpty(content) || content.Equals("true", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(errorJson))
             {
-                return (T)(object)true;
+                try
+                {
+                    var errorObj = JObject.Parse(errorJson);
+                    errorMessage = errorObj["message"]?.ToString() ?? errorJson;
+                }
+                catch
+                {
+                    errorMessage = "Could not parse error response.";
+                }
             }
 
-            return JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+            var ex = new HttpRequestException(errorMessage, null, response.StatusCode);
+            throw ex;
         }
     }
 }

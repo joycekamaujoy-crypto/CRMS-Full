@@ -91,8 +91,14 @@ namespace CRMS_UI.Controllers
             }
             catch (HttpRequestException ex)
             {
-                Console.WriteLine($"Login failed: {ex.Message}");
-                ModelState.AddModelError(string.Empty, "Login failed. Please check your credentials and try again.");
+                if (ex.Message.Contains("Email has not been confirmed"))
+                {
+                    ModelState.AddModelError(string.Empty, "You must confirm your email before you can log in. Please check your inbox.");
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "Login failed. Please check your credentials and try again.");
+                }
                 return View(model);
             }
             catch (Exception)

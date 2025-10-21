@@ -10,4 +10,8 @@
     <None Remove="Views\Tracking\5p2dmy5g.pjz~" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
 </Project>
