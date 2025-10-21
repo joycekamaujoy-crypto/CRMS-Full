@@ -27,5 +27,13 @@
     </div>
 
     @await RenderSectionAsync("Scripts", required: false)
+    @if (TempData["DevConfirmationLink"] != null)
+    {
+        <script>
+            console.warn('--- DEV-ONLY REGISTRATION LINK ---');
+            console.log('@Html.Raw(TempData["DevConfirmationLink"])');
+            console.warn('------------------------------------');
+        </script>
+    }
 </body>
 </html>

@@ -32,14 +32,17 @@ namespace CRMS_UI.Controllers
 
             try
             {
-                await _apiService.PostAsync<AuthResponse, RegisterViewModel>("auth/register", model, HttpContext);
+                var response = await _apiService.PostAsync<RegisterResponseViewModel, RegisterViewModel>("auth/register", model, HttpContext);
 
-                TempData["SuccessMessage"] = "Registration successful! Please sign in to continue.";
+                TempData["SuccessMessage"] = response.Message;
+
+                TempData["DevConfirmationLink"] = response.DevConfirmationLink;
+
                 return RedirectToAction("Login");
             }
             catch (HttpRequestException ex)
             {
-                if (ex.StatusCode == HttpStatusCode.Conflict)
+                if (ex.StatusCode == System.Net.HttpStatusCode.Conflict)
                 {
                     ModelState.AddModelError("Email", "A user with this email already exists.");
                 }
